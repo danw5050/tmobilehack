@@ -21,7 +21,7 @@ Sub Globals
 	Dim btnSend As Button
 		Dim SensorsLabels As Map
 	Dim val, val2 As Int = 0
-	val = -40
+	val2 = 40
 	Dim horizontal, vertical As Float = 0
 	Dim lab, lab2 As Label
 	Dim time As Timer
@@ -255,7 +255,7 @@ val2 = 360
 End If 
 
 Dim firstInt, secondInt, thirdInt As Int
-firstInt = Ceil(val2/8)+45
+firstInt = Ceil(val2/6.5)+45
 secondInt = Ceil(val/6)+45
 thirdInt = seekbarvalue
 
@@ -269,8 +269,8 @@ AStream.Write(sendingValue.GetBytes("UTF8"))
 End Sub
 
 Sub reset_Click
-	val = -40
-	val2 =  0
+	val = 0
+	val2 =  40
 	ToastMessageShow("Values have been reset.",False)
 End Sub
 
