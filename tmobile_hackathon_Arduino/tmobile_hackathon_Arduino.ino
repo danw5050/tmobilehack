@@ -8,6 +8,7 @@ const int blinkingLED = 13;
 const int relayLED = 8;
 
 String input = "";
+float aVal = 0;
 
 
 void setup() {
@@ -16,8 +17,8 @@ void setup() {
   pinMode(blinkingLED, OUTPUT);
   pinMode(relayLED, OUTPUT);
   servoV.attach(3);
-  servoH.attach(4);
-  servoA.attach(5);
+  //servoH.attach(4);
+  servoA.attach(9);
 }
 
 void loop() {
@@ -48,7 +49,7 @@ void loop() {
 //{ digitalWrite(relayLED, LOW);}
       
       //Serial.write("Input: ");
-      //Serial.print(input);
+      Serial.print(input);
       //char a = input[0];
       //Serial.println(a);
 
@@ -58,10 +59,20 @@ void loop() {
 
      // Serial.println((value1));
      // Serial.println((value2));
-      servoV.write(value1 * 1.4);
-      servoH.write(value2*1.4);
-      servoA.write(value3*2);
+      servoV.write(value1 * 3.0);
+
+      if (aVal != value2) { 
+        aVal = value2;
+        servoH.attach(4);
+        servoH.write(value2*3.0);
+        delay(100);
+        servoH.detach();
+      }
+
+      float newVal = value3*3.0;
+      servoA.write(newVal);
       delay(10);
+      
       input = "";
     }
   }

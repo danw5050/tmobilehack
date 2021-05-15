@@ -1,0 +1,172 @@
+﻿Build1=Default,anywheresoftware.b4a.samples.bluetooth
+File1=1.bal
+File2=2.bal
+File3=background.png
+File4=icon.png
+FileGroup1=Default Group
+FileGroup2=Default Group
+FileGroup3=Default Group
+FileGroup4=Default Group
+Group=Default Group
+Library1=core
+Library2=phone
+Library3=randomaccessfile
+Library4=serial
+Library5=webviewextras
+ManifestCode='This code will be applied to the manifest file during compilation.~\n~'You do not need to modify it in most cases.~\n~'See this link for for more information: http://www.basic4ppc.com/forum/showthread.php?p=78136~\n~AddManifestText(~\n~<uses-sdk android:minSdkVersion="28"/>~\n~<supports-screens android:largeScreens="true" ~\n~    android:normalScreens="true" ~\n~    android:smallScreens="true" ~\n~    android:anyDensity="true"/>)~\n~SetApplicationAttribute(android:icon, "@drawable/icon")~\n~SetApplicationAttribute(android:label, "$LABEL$")~\n~SetApplicationAttribute(android:usesCleartextTraffic, "true")~\n~SetApplicationAttribute(android:largeHeap,"true")~\n~SetActivityAttribute(ChatActivity, android:hardwareAccelerated, "true")~\n~'End of default text.~\n~
+Module1=ChatActivity
+NumberOfFiles=4
+NumberOfLibraries=5
+NumberOfModules=1
+Version=9.801
+@EndOfDesignText@
+#Region Module Attributes
+	#FullScreen: True
+	#IncludeTitle: False
+	#ApplicationLabel: TMobile Hackathon
+	#VersionCode: 1
+	#VersionName: 
+	#SupportedOrientations: Landscape
+	#CanInstallToExternalStorage: False
+#End Region
+
+'Activity module
+Sub Process_Globals
+	Dim admin As BluetoothAdmin
+	Dim serial1 As Serial
+	Dim foundDevices As List
+	Type NameAndMac (Name As String, Mac As String)
+	Dim connectedDevice As NameAndMac
+	
+	Dim ipAddress As String = "192.168.0.162"
+	Dim connected = False
+End Sub
+
+Sub Globals
+	Dim btnSearchForDevices As Button
+	Dim btnAllowConnection As Button
+	Private ipValueEdit As EditText
+	Private background As ImageView
+End Sub
+
+Sub Activity_Create(FirstTime As Boolean)
+	If FirstTime Then
+		admin.Initialize("admin")
+		serial1.Initialize("serial1")
+	End If
+	Activity.LoadLayout("1")
+	
+	btnAllowConnection.Visible = False
+End Sub
+
+Sub Activity_Resume
+	ipValueEdit.Visible = False
+	ipValueEdit.Enabled = False
+	btnSearchForDevices.Enabled = False
+	btnAllowConnection.Enabled = False
+	background.Left = -2%x
+	background.Width =  105%x
+	background.Top = -2%y
+	background.Height = 105%y
+	
+	If admin.IsEnabled = False Then
+		If admin.Enable = False Then 
+			ToastMessageShow("Error enabling Bluetooth adapter.", True)
+		Else
+			ToastMessageShow("Enabling Bluetooth adapter...", False)
+			'the StateChanged event will be soon raised
+		End If
+	Else
+		Admin_StateChanged(admin.STATE_ON, 0)
+	End If
+End Sub
+
+Sub Admin_StateChanged (NewState As Int, OldState As Int)
+	btnSearchForDevices.Enabled = (NewState = admin.STATE_ON)
+	btnAllowConnection.Enabled = btnSearchForDevices.Enabled
+End Sub
+
+Sub Activity_Pause (UserClosed As Boolean)
+	If UserClosed = True Then
+		serial1.Disconnect
+	End If
+End Sub
+
+Sub btnSearchForDevices_Click
+If ipAddress = "" Then
+	ToastMessageShow("You MUST have an Ip Value",False)
+Else 
+	foundDevices.Initialize
+	If admin.StartDiscovery	= False Then 
+		ToastMessageShow("Error starting discovery process.", True)
+	Else
+		'ProgressDialogShow("Searching for devices...")
+	End If
+End If 
+End Sub
+
+Sub Admin_DiscoveryFinished
+	If connected = False Then 
+		'ProgressDialogHide
+		If foundDevices.Size = 0 Then
+			ToastMessageShow("No device found.", True)
+		Else
+			Dim l As List
+			l.Initialize
+			For i = 0 To foundDevices.Size - 1
+				Dim nm As NameAndMac
+				nm = foundDevices.Get(i)
+				If nm.Name.ToLowerCase().StartsWith("hc") Then
+					l.Add(nm.Name)
+					Exit
+				End If
+			Next
+			Dim res As Int
+			'res = InputList(l, "Choose device to connect", -1)
+			'If res <> DialogResponse.CANCEL Then
+				connectedDevice = foundDevices.Get(0)
+				ProgressDialogShow("Trying to connect to: " & connectedDevice.Name & " (" & connectedDevice.Mac & ")")
+				serial1.Connect(connectedDevice.Mac)
+				connected = True
+			'End If
+		End If
+	End If
+End Sub
+
+Sub Admin_DeviceFound (Name As String, MacAddress As String)
+	Log(Name & ":" & MacAddress)
+	Dim nm As NameAndMac
+	nm.Name = Name
+	nm.Mac = MacAddress
+	If nm.Name.ToLowerCase().StartsWith("hc") Then
+		foundDevices.Add(nm)
+		Admin_DiscoveryFinished
+	End If 
+	
+	'ProgressDialogShow("Searching for devices (~ device found)...".Replace("~", foundDevices.Size))
+End Sub
+
+Sub btnAllowConnection_Click
+	'this intent makes the device discoverable for 300 seconds.
+	Dim i As Intent
+	i.Initialize("android.bluetooth.adapter.action.REQUEST_DISCOVERABLE", "")
+	i.PutExtra("android.bluetooth.adapter.extra.DISCOVERABLE_DURATION", 300)
+	StartActivity(i)
+	
+	serial1.Listen
+End Sub
+
+Sub Serial1_Connected (Success As Boolean)
+	ProgressDialogHide
+	Log("connected: " & Success)
+	If Success = False Then
+		Log(LastException.Message)
+		ToastMessageShow("Error connecting: " & LastException.Message, True)
+	Else
+		StartActivity(ChatActivity)
+	End If
+End Sub
+
+Sub ipValueEdit_TextChanged (Old As String, New As String)
+	'ipAddress = ipValueEdit.Text.Trim
+End Sub
